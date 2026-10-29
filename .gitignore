@@ -1,0 +1,21 @@
+# Carpetas de compilación y binarios de Visual Studio
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Entorno y configuraciones de usuario de Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# Archivos de paquetes NuGet
+*.nuget.props
+*.nuget.targets
+packages/
+
+# Archivos temporales del sistema operativo
+.DS_Store
+Thumbs.db
