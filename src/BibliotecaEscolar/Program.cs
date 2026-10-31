@@ -9,53 +9,133 @@ namespace BibliotecaEscolar
         static void Main(string[] args)
         {
             Console.WriteLine("=================================================================");
-            Console.WriteLine("    BIBLIOTECA ESCOLAR - DÍA 2: CARGA DE DATOS Y VERIFICACIÓN    ");
+            Console.WriteLine("    BIBLIOTECA ESCOLAR - DÍA 3: BÚSQUEDAS Y GESTIÓN DE PRÉSTAMOS ");
             Console.WriteLine("=================================================================\n");
 
-            // Carga de 8 títulos con cantidades irregulares de ejemplares (de 1 a 5 copias)
-            List<Titulo> catalogo = new List<Titulo>
+            // 1. Carga del catálogo
+            List<Titulo> catalogo = CargarCatalogo();
+
+            // 2. Reporte de Título(s) Más Prestados (Manejo de empates)
+            MostrarMasPrestados(catalogo);
+
+            // 3. Búsqueda por ISBN
+            Console.WriteLine("\n--- 🔍 BÚSQUEDA POR ISBN ---");
+            string isbnBuscar = "978-0132350884";
+            Titulo libroEncontrado = BuscarPorISBN(catalogo, isbnBuscar);
+            if (libroEncontrado != null)
+            {
+                Console.WriteLine($"[ENCONTRADO] {libroEncontrado.Nombre} | Préstamos totales: {libroEncontrado.PrestamosHistoricos} | Copias disponibles: {libroEncontrado.ObtenerDisponibles()}");
+            }
+            else
+            {
+                Console.WriteLine($"[NO ENCONTRADO] No existe un libro registrado con ISBN {isbnBuscar}");
+            }
+
+            // 4. Simulación de Préstamo de una copia
+            Console.WriteLine("\n--- 📖 SIMULACIÓN DE PRÉSTAMO ---");
+            PrestarEjemplar(catalogo, "978-0132350884");
+
+            // 5. Simulación de Devolución de una copia
+            Console.WriteLine("\n--- 🔄 SIMULACIÓN DE DEVOLUCIÓN ---");
+            DevolverEjemplar(catalogo, "978-0132350884");
+        }
+
+        static List<Titulo> CargarCatalogo()
+        {
+            return new List<Titulo>
             {
                 new Titulo("978-0131103627", "C Programming Language", 45, 5),
                 new Titulo("978-0132350884", "Clean Code", 120, 3),
                 new Titulo("978-0201633610", "Design Patterns", 88, 1),
                 new Titulo("978-0134685991", "Effective Java", 30, 2),
-                new Titulo("978-0596007126", "Head First Design Patterns", 120, 5), // Empate en préstamos con Clean Code
+                new Titulo("978-0596007126", "Head First Design Patterns", 120, 5), // Empate en préstamos con Clean Code (120)
                 new Titulo("978-0134494166", "Clean Architecture", 15, 1),
                 new Titulo("978-0321356680", "Refactoring", 62, 4),
                 new Titulo("978-0132143011", "Introduction to Algorithms", 95, 2)
             };
+        }
 
-            Console.WriteLine($"Catálogo cargado exitosamente. Total de títulos: {catalogo.Count}\n");
+        static void MostrarMasPrestados(List<Titulo> catalogo)
+        {
+            Console.WriteLine("--- 🏆 TÍTULO(S) MÁS PRESTADO(S) HISTÓRICAMENTE ---");
+            int maxPrestamos = 0;
 
-            bool hayCeldasVacias = false;
-
+            // Determinar el mayor número de préstamos
             foreach (var titulo in catalogo)
             {
-                Console.WriteLine($"ISBN: {titulo.ISBN} | Título: {titulo.Nombre}");
-                Console.WriteLine($"   - Préstamos Históricos: {titulo.PrestamosHistoricos}");
-                Console.WriteLine($"   - Capacidad del Arreglo: {titulo.Ejemplares.Length} ejemplares");
-                Console.WriteLine($"   - Disponibles actuales: {titulo.ObtenerDisponibles()}");
-
-                // Verificación de celdas nulas o desaprovechadas en memoria
-                for (int i = 0; i < titulo.Ejemplares.Length; i++)
+                if (titulo.PrestamosHistoricos > maxPrestamos)
                 {
-                    if (titulo.Ejemplares[i] == null)
-                    {
-                        hayCeldasVacias = true;
-                        Console.WriteLine($"   [ALERTA] Se detectó celda nula en el índice {i}");
-                    }
+                    maxPrestamos = titulo.PrestamosHistoricos;
                 }
-                Console.WriteLine(new string('-', 60));
             }
 
-            if (!hayCeldasVacias)
+            // Imprimir todos los títulos que coincidan con el máximo (para contemplar empates)
+            foreach (var titulo in catalogo)
             {
-                Console.WriteLine("\n[VERIFICACIÓN EXITOSA] Ningún título contiene celdas vacías ni desaprovechadas.");
+                if (titulo.PrestamosHistoricos == maxPrestamos)
+                {
+                    Console.WriteLine($"⭐ Título: {titulo.Nombre} | Préstamos: {titulo.PrestamosHistoricos} | ISBN: {titulo.ISBN}");
+                }
             }
-            else
+        }
+
+        static Titulo BuscarPorISBN(List<Titulo> catalogo, string isbn)
+        {
+            foreach (var titulo in catalogo)
             {
-                Console.WriteLine("\n[ERROR DE ESTRUCTURA] Se encontraron celdas vacías en los arreglos.");
+                if (titulo.ISBN.Equals(isbn, StringComparison.OrdinalIgnoreCase))
+                {
+                    return titulo;
+                }
             }
+            return null;
+        }
+
+        static bool PrestarEjemplar(List<Titulo> catalogo, string isbn)
+        {
+            Titulo titulo = BuscarPorISBN(catalogo, isbn);
+            if (titulo == null)
+            {
+                Console.WriteLine("❌ Error: Título no encontrado.");
+                return false;
+            }
+
+            foreach (var ejemplar in titulo.Ejemplares)
+            {
+                if (ejemplar.Disponible)
+                {
+                    ejemplar.Disponible = false;
+                    titulo.PrestamosHistoricos++;
+                    Console.WriteLine($"✔ Éxito: Se prestó la copia #{ejemplar.IdCopia} de '{titulo.Nombre}'. Disponibles restantes: {titulo.ObtenerDisponibles()}");
+                    return true;
+                }
+            }
+
+            Console.WriteLine($"❌ Error: No hay ejemplares disponibles para prestar de '{titulo.Nombre}'.");
+            return false;
+        }
+
+        static bool DevolverEjemplar(List<Titulo> catalogo, string isbn)
+        {
+            Titulo titulo = BuscarPorISBN(catalogo, isbn);
+            if (titulo == null)
+            {
+                Console.WriteLine("❌ Error: Título no encontrado.");
+                return false;
+            }
+
+            foreach (var ejemplar in titulo.Ejemplares)
+            {
+                if (!ejemplar.Disponible)
+                {
+                    ejemplar.Disponible = true;
+                    Console.WriteLine($"✔ Éxito: Se devolvió la copia #{ejemplar.IdCopia} de '{titulo.Nombre}'. Disponibles actuales: {titulo.ObtenerDisponibles()}");
+                    return true;
+                }
+            }
+
+            Console.WriteLine($"⚠️ Advertencia: Todas las copias de '{titulo.Nombre}' ya están marcadas como disponibles.");
+            return false;
         }
     }
 }
